@@ -1,7 +1,7 @@
-#include <opencv4/opencv2/imgproc.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 
 int main()
@@ -12,7 +12,7 @@ int main()
     int width = background.cols;
 
     int A = heigth / 4;
-    int w = 2 * CV_PI / width;
+    double w = CV_PI * 8;
 
     int robot_w = width / 10;
     int robot_h = heigth / 10;
