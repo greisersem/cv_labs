@@ -1,15 +1,15 @@
-#include <opencv2/imgpoc.hpp>
-#include <opencv2/gighgui>
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv4/opencv2/imgproc.hpp>
+#include <opencv4/opencv2/highgui.hpp>
+#include <opencv4/opencv2/core.hpp>
+#include <opencv4/opencv2/imgcodecs.hpp>
 
 
 int main()
 {
-    cv::Mat background = cv::imread("image.lpg");
+    cv::Mat background = cv::imread("250px-Lenna.png");
 
     int heigth = background.rows;
-    int width = backgroung.cols;
+    int width = background.cols;
 
     int A = heigth / 4;
     int w = 2 * CV_PI / width;
@@ -21,7 +21,7 @@ int main()
 
     for (int x = 0; x < width; x++) {
         int y = (heigth / 2) + (A * std::sin(x * w));
-        cv::circle(background, cv::Point(x, y), line_color, -1);
+        cv::circle(background, cv::Point(x, y), 5, line_color, -1);
         cv::imshow("Sinus", background);
     }
 
