@@ -6,7 +6,8 @@
 
 int main()
 {
-    cv::Mat background = cv::imread("250px-Lenna.png");
+    cv::Mat background = cv::imread("Untitled.jpeg");
+    cv::String output_image = "output.jpeg";
 
     int heigth = background.rows;
     int width = background.cols;
@@ -15,7 +16,7 @@ int main()
     double w = 4 * CV_PI / width;
 
     int robot_w = width / 10;
-    int robot_h = heigth / 10;
+    int robot_h = robot_w;
     cv::Scalar robot_color = cv::Scalar(255, 0, 0);
 
     cv::Scalar line_color = cv::Scalar(0, 255, 0);
@@ -31,11 +32,11 @@ int main()
         cv::Mat background_copy;
         background.copyTo(background_copy);
         
-        cv::RotatedRectangle robot(
+        cv::RotatedRect robot(
             cv::Point2f(x, y),
             cv::Size2f(robot_h, robot_w),
             angle
-        )
+        );
 
         cv::Point2f vertices[4];
         robot.points(vertices);
@@ -46,7 +47,10 @@ int main()
 
         cv::imshow("Robot moving by sinus", background_copy);
         cv::waitKey(10);
+        if (x == width / 2) {
+            cv::imwrite(output_image, background_copy);
+        }
     }
 
-    cv::waitKey();
+    cv::destroyAllWindows();
 }
