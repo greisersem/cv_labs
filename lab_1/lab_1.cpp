@@ -22,15 +22,28 @@ int main()
 
     for (int x = 0; x < width; x++) {
         int y = (heigth / 2) + (A * std::sin(x * w + CV_PI));
+
+        double derivative = A * w * std::cos(x * w + CV_PI);
+        double angle = std::atan(derivative) * (180 / CV_PI);
+
         cv::circle(background, cv::Point(x, y), 5, line_color, -1);
         
         cv::Mat background_copy;
         background.copyTo(background_copy);
-        cv::rectangle(background_copy, 
-            cv::Point(x - robot_w / 2, y - robot_w / 2),
-            cv::Point(x + robot_w / 2, y + robot_h / 2),
-            robot_color
-        );
+        
+        cv::RotatedRectangle robot(
+            cv::Point2f(x, y),
+            cv::Size2f(robot_h, robot_w),
+            angle
+        )
+
+        cv::Point2f vertices[4];
+        robot.points(vertices);
+
+        for (int i = 0; i < 4; i++){
+            cv::line(background_copy, vertices[i], vertices[(i + 1) % 4], robot_color, 2);
+        }
+
         cv::imshow("Robot moving by sinus", background_copy);
         cv::waitKey(10);
     }
