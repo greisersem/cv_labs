@@ -16,20 +16,18 @@ int main()
 
     int robot_w = width / 10;
     int robot_h = heigth / 10;
+    cv::Scalar robot_color = cv::Scalar(255, 0, 0);
 
     cv::Scalar line_color = cv::Scalar(0, 255, 0);
 
     for (int x = 0; x < width; x++) {
         int y = (heigth / 2) + (A * std::sin(x * w));
         cv::circle(background, cv::Point(x, y), 5, line_color, -1);
-        cv::imshow("Sinus", background);
-        cv::waitKey(1);
-    }
-
-    for (int x = 0; x < width; x++) {
-        int y = (heigth / 2) + (A * std::sin(x * w));
-        cv::circle(background, cv::Point(x, y), 5, line_color, -1);
-        cv::imshow("Sinus", background);
+        
+        cv::Mat background_copy;
+        background.copyTo(background_copy);
+        cv::rectangle(background_copy, cv::Point(x, y), cv::Point(x + robot_w, y + robot_h));
+        cv::imshow("Robot moving by sinus", background_copy);
         cv::waitKey(1);
     }
 
