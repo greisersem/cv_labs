@@ -5,12 +5,12 @@
 
 int main() 
 {
-    cv::Mat image1 = imread("image_1.jpeg");
-    cv::Mat image2 = imread("image_1.jpeg");
+    cv::Mat image1 = cv::imread("250px-Lenna.png");
+    cv::Mat image2 = cv::imread("Untitled.jpeg");
     double alpha = 0.7;
     
     if (image1.size() != image2.size()){
-        cv::resize(image2, image1.size(), image2);
+        cv::resize(image2, image2, image1.size());
     }
 
     cv::Mat output;
@@ -20,4 +20,7 @@ int main()
     cv::imshow("First image", image1);
     cv::imshow("Second image", image2);
     cv::imshow("Result image", output);
+
+    cv::waitKey();
+    cv::destroyAllWindows();
 }
