@@ -12,7 +12,7 @@ int main()
     int width = background.cols;
 
     int A = heigth / 4;
-    double w = 2 * CV_PI / width;
+    double w = 4 * CV_PI / width;
 
     int robot_w = width / 10;
     int robot_h = heigth / 10;
@@ -21,14 +21,18 @@ int main()
     cv::Scalar line_color = cv::Scalar(0, 255, 0);
 
     for (int x = 0; x < width; x++) {
-        int y = (heigth / 2) + (A * std::sin(x * w));
+        int y = (heigth / 2) + (A * std::sin(x * w + CV_PI));
         cv::circle(background, cv::Point(x, y), 5, line_color, -1);
         
         cv::Mat background_copy;
         background.copyTo(background_copy);
-        cv::rectangle(background_copy, cv::Point(x, y), cv::Point(x + robot_w, y + robot_h));
+        cv::rectangle(background_copy, 
+            cv::Point(x - robot_w / 2, y - robot_w / 2),
+            cv::Point(x + robot_w / 2, y + robot_h / 2),
+            robot_color
+        );
         cv::imshow("Robot moving by sinus", background_copy);
-        cv::waitKey(1);
+        cv::waitKey(10);
     }
 
     cv::waitKey();
