@@ -8,11 +8,13 @@
 
 void calc_diff(cv::Mat img_1, cv::Mat img_2)
 {
-    cv::Mat diff_mat;
+    cv::Mat diff_mat, log_diff_mat;
 
     cv::absdiff(img_1, img_2, diff_mat);
-    
     cv::imshow("Difference between images", diff_mat);
+
+    cv::intensity_transform::logTransform(diff_mat, log_diff_mat);
+    cv::imshow("Logarithm difference between images", diff_mat);
 
     int non_zero_px = cv::countNonZero(diff_mat);
 
@@ -28,24 +30,6 @@ cv::Mat box_filter_kernel(cv::Size2i kernel_size)
 
     return kernel;
 }
-
-
-cv::Mat gauss_filter_kernel(cv::Size2i size, double sigma)
-{
-    cv::Mat kernel(size, CV_32F);
-
-    for (int i = 0; i < size.width; i++) {
-        for (int j = 0; j < size.height; j++) {
-            int center = size.width / 2;
-            int x = i - center;
-            int y = i - center;
-
-            double value = std::exp(-(x * x + y * y) / (2.0 * sigma));
-            kernel.at<double>(i, j) = value;
-        }
-    }
-}
-
 
 int main()
 {
@@ -80,18 +64,13 @@ int main()
     double time_box = (cv::getTickCount() - tick_start) / cv::getTickFrequency();
 
     tick_start = cv::getTickCount();
-    cv::GaussianBlur(src, gauss_dst, kernel_size, sigma);
+    cv::GaussianBlur(src, gauss_dst, kernel_size);
     double time_gauss = (cv::getTickCount() - tick_start) / cv::getTickFrequency();
 
     std::cout << "Box filter time: " << time_box << " s" << std::endl;
     std::cout << "Gauss filter time: " << time_gauss << " s" << std::endl;
 
     calc_diff(blur_dst, gauss_dst);
-    
-    diff_dst.convertTo(diff_dst, CV_32F);
-    
-    log_diff_dst.convertTo(log_diff_dst, CV_32F);
-    cv::intensity_transform::logTransform(diff_dst, log_diff_dst);
 
     cv::imshow("Original", src);
     cv::imshow("Box Filter", blur_dst);
