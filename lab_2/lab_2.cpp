@@ -70,14 +70,10 @@ int main()
     std::cout << "Box filter time: " << time_box << " s" << std::endl;
     std::cout << "Gauss filter time: " << time_gauss << " s" << std::endl;
 
-    calc_diff(blur_dst, gauss_dst);
-
     cv::imshow("Original", src);
     cv::imshow("Box Filter", blur_dst);
     cv::imshow("Gauss Filter", gauss_dst);
-    cv::imshow("Difference", diff_dst);
-    cv::imshow("Log Difference", log_diff_dst);
-
+    calc_diff(blur_dst, gauss_dst);
 
     cv::waitKey();
     cv::destroyAllWindows();
