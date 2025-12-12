@@ -14,7 +14,7 @@ void calc_diff(cv::Mat img_1, cv::Mat img_2)
     cv::imshow("Difference between images", diff_mat);
 
     cv::intensity_transform::logTransform(diff_mat, log_diff_mat);
-    cv::imshow("Logarithm difference between images", diff_mat);
+    cv::imshow("Logarithm difference between images", log_diff_mat);
 
     int non_zero_px = cv::countNonZero(diff_mat);
 
@@ -31,6 +31,19 @@ cv::Mat box_filter_kernel(cv::Size2i kernel_size)
     return kernel;
 }
 
+cv::Mat laplace_filter_kernel(cv::Size2i kernel_size)
+{
+    cv::Mat kernel = cv::Mat::ones(kernel_size, CV_32F);
+
+    kernel.at<float>(1, 1) = -4.0;
+    kernel.at<float>(0, 0) = 0.0;
+    kernel.at<float>(2, 2) = 0.0;
+    kernel.at<float>(0, 2) = 0.0;
+    kernel.at<float>(2, 0) = 0.0;
+
+    return kernel;
+}
+
 int main()
 {
     cv::Mat src = cv::imread("250px-Lenna.png");
@@ -38,7 +51,7 @@ int main()
     cv::Size2i kernel_size(3, 3);
 
     cv::Mat box_dst, blur_dst;
-/*
+
     double tick_start = cv::getTickCount();
     cv::filter2D(src, box_dst, -1, box_filter_kernel(kernel_size), cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
     double time_end = (double)(cv::getTickCount() - tick_start) / cv::getTickFrequency();
@@ -49,31 +62,49 @@ int main()
     time_end = (cv::getTickCount() - tick_start) / cv::getTickFrequency();
     std::cout << "Blur: "<< time_end << std::endl;
 
-    cv::imshow("Source image", src);
-    cv::imshow("Filtered image", box_dst);
-    cv::imshow("Filtered with blur image", blur_dst);
+    // cv::imshow("Source image", src);
+    // cv::imshow("Filtered image", box_dst);
+    // cv::imshow("Filtered with blur image", blur_dst);
 
-    calc_diff(box_dst, blur_dst);
-*/
+    // calc_diff(box_dst, blur_dst);
+
     cv::Mat gauss_dst, diff_dst, log_diff_dst;
 
     double sigma = 1.0;
 
-    double tick_start = cv::getTickCount();
+    tick_start = cv::getTickCount();
     cv::blur(src, blur_dst, kernel_size);
     double time_box = (cv::getTickCount() - tick_start) / cv::getTickFrequency();
 
     tick_start = cv::getTickCount();
-    cv::GaussianBlur(src, gauss_dst, kernel_size);
+    cv::GaussianBlur(src, gauss_dst, kernel_size, sigma);
     double time_gauss = (cv::getTickCount() - tick_start) / cv::getTickFrequency();
 
     std::cout << "Box filter time: " << time_box << " s" << std::endl;
     std::cout << "Gauss filter time: " << time_gauss << " s" << std::endl;
 
-    cv::imshow("Original", src);
-    cv::imshow("Box Filter", blur_dst);
-    cv::imshow("Gauss Filter", gauss_dst);
-    calc_diff(blur_dst, gauss_dst);
+    // cv::imshow("Original", src);
+    // cv::imshow("Box Filter", blur_dst);
+    // cv::imshow("Gauss Filter", gauss_dst);
+    // calc_diff(blur_dst, gauss_dst);
+
+    cv::Mat gauss_unsharp_mask, box_unsharp_mask;
+    double k = 0.5;
+
+    gauss_unsharp_mask = src + k * (src - gauss_dst);
+    box_unsharp_mask = src + k * (src - box_dst);
+
+    // cv::imshow("Gauss filter + unsharp mask", gauss_unsharp_mask);
+    // cv::imshow("Box filter + unsharp mask", box_unsharp_mask);
+    // calc_diff(gauss_unsharp_mask, box_unsharp_mask);
+
+    cv::Mat laplace_dst, laplace_unsharp_mask;
+
+    cv::filter2D(src, laplace_dst, -1, laplace_filter_kernel(kernel_size));
+    cv::imshow("Laplace filter", laplace_dst);
+
+    laplace_unsharp_mask = src + k * (src - laplace_dst);
+    cv::imshow("Laplace filter + unsharp mask", laplace_unsharp_mask);
 
     cv::waitKey();
     cv::destroyAllWindows();
