@@ -138,7 +138,7 @@ cv::Point find_bulb(cv::Mat img)
 }
 
 
-void robots_detection(cv::Mat img)
+cv::Mat robots_detection(cv::Mat img)
 {
     cv::Mat res = img.clone();
     cv::Point bulb_coords = find_bulb(img);
@@ -149,12 +149,12 @@ void robots_detection(cv::Mat img)
     int green_team_hue = 70;
 
     cv::Mat red = find_nearest(img, bulb_coords, "red", res);
-    cv::imshow("red", red);
+    // cv::imshow("red", red);
     cv::Mat blue = find_nearest(img, bulb_coords, "blue", res);
-    cv::imshow("blue", blue);
+    // cv::imshow("blue", blue);
     cv::Mat green = find_nearest(img, bulb_coords, "green", res);
-    cv::imshow("green", green);
-    cv::imshow("img", res);
+    // cv::imshow("green", green);
+    returm res;
 }
 
 
@@ -162,22 +162,12 @@ int main()
 {
     cv::Mat img = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/roi_robotov.jpg");
     cv::Mat img_1 = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/roi_robotov_1.jpg");
-    robots_detection(img);
+    cv::Mat res_1 = robots_detection(img);
     cv::waitKey();
-    robots_detection(img_1);
+    cv::Mat res_2 = robots_detection(img_1);
     cv::waitKey();
 
     cv::VideoCapture cap("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/Robot Swarm.mp4");
-    
-    if (!cap.isOpened()) {
-        std::cout << "error video" << std::endl;
-    }
-
-    int f_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-    int f_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-
-    cv::VideoWriter video("dst.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
-        10, cv::Size(f_width, f_height));
 
     int count = 0;
     while(true) {
@@ -185,10 +175,10 @@ int main()
         cap >> frame;
         std::cout << "frame " + std::to_string(count) + " processed" << std::endl;
         if (!frame.empty()) {
-            robots_detection(frame);
-            video.write(frame);
-            cv::imshow("Frame", frame);
+            cv::Mat res = robots_detection(frame);
+            cv::imshow("Frame", res);
             count ++;
+            cv::waitKey(1);
         } else {
             break;
         }
