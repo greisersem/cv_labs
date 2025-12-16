@@ -18,20 +18,47 @@ void draw_rectangle(cv::Mat img, cv::Point center, cv::Scalar color)
 }
 
 
-cv::Mat find_nearest(cv::Mat img, cv::Point bulb_coords, int robot_team_hue)
+cv::Mat find_nearest(cv::Mat img, cv::Point bulb_coords, std::string team)
 {
     cv::Mat src_hsv;
     cv::cvtColor(img, src_hsv, cv::COLOR_BGR2HSV);
 
-    int h_min = std::max(0, robot_team_hue - 10);
-    int h_max = std::min(179, robot_team_hue + 10);
-
-    cv::inRange(
-        src_hsv,
-        cv::Scalar(h_min, 120, 120),
-        cv::Scalar(h_max, 255, 255),
-        src_hsv
-    );
+    cv::Scalar rect_color;
+    if (team == "red") {
+        cv::Mat temp_1, temp_2;
+        cv::inRange(
+            src_hsv,
+            cv::Scalar(0, 120, 120),
+            cv::Scalar(15, 255, 255),
+            temp_1
+        );
+        cv::inRange(
+            src_hsv,
+            cv::Scalar(170, 120, 120),
+            cv::Scalar(179, 255, 255),
+            temp_2
+        );
+        src_hsv = temp_1 | temp_2;
+        rect_color = cv::Scalar(0, 0, 255);
+    } else if (team == "blue")
+    {
+        cv::inRange(
+            src_hsv,
+            cv::Scalar(85, 120, 120),
+            cv::Scalar(105, 255, 255),
+            src_hsv
+        );
+        rect_color = cv::Scalar(255, 0, 0);
+    } else if (team == "green")
+    {
+        cv::inRange(
+            src_hsv,
+            cv::Scalar(60, 80, 120),
+            cv::Scalar(80, 255, 255),
+            src_hsv
+        );
+        rect_color = cv::Scalar(0, 255, 0);
+    }
 
     std::vector <std::vector <cv::Point>> contours;
     cv::findContours(src_hsv, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -45,11 +72,11 @@ cv::Mat find_nearest(cv::Mat img, cv::Point bulb_coords, int robot_team_hue)
     }
 
     for (int i = 0; i < contours.size(); i++) {
-        if (contours[i].size() > largest_contour.size() * 0.1) {
+        if (contours[i].size() > largest_contour.size() * 0.3) {
             cv::Moments moments = cv::moments(contours[i]);
             int center_x = (moments.m10 / moments.m00);
             int center_y = (moments.m01 / moments.m00);
-            draw_rectangle(img, cv::Point(center_x, center_y), cv::Scalar(0,0,0));
+            draw_rectangle(img, cv::Point(center_x, center_y), rect_color);
         }
     }
 
@@ -99,20 +126,23 @@ void robots_detection(cv::Mat img)
     int blue_team_hue = 95;
     int green_team_hue = 70;
 
-    cv::Mat red = find_nearest(img, bulb_coords, red_team_hue);
+    cv::Mat red = find_nearest(img, bulb_coords, "red");
     cv::imshow("red", red);
-    cv::Mat blue = find_nearest(img, bulb_coords, blue_team_hue);
+    cv::Mat blue = find_nearest(img, bulb_coords, "blue");
     cv::imshow("blue", blue);
-    cv::Mat green = find_nearest(img, bulb_coords, green_team_hue);
+    cv::Mat green = find_nearest(img, bulb_coords, "green");
     cv::imshow("green", green);
     cv::imshow("img", img);
-    cv::waitKey();
 }
 
 
 int main()
 {
-    cv::Mat img = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/roi_robotov_1.jpg");
+    cv::Mat img = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/roi_robotov.jpg");
+    cv::Mat img_1 = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/roi_robotov_1.jpg");
     robots_detection(img);
+    cv::waitKey();
+    robots_detection(img_1);
+    cv::waitKey();
     cv::destroyAllWindows();
 }
