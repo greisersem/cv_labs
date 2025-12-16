@@ -14,12 +14,6 @@ void gk(cv::Mat img, cv::Mat templ) {
     cv::findContours(templ_res, templ_wrench_contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
     cv::Moments mnts = cv::moments(templ_wrench_contour[0]);
-    double m00 = mnts.m00;
-    double m10 = mnts.m10;
-    double m01 = mnts.m01;
-
-    double templ_area = cv::contourArea(templ_wrench_contour[0]);
-    double templ_perimeter = cv::arcLength(templ_wrench_contour[0], true);
 
     cv::cvtColor(img, res, cv::COLOR_BGR2GRAY);
     cv::threshold(res, res, 230, 255, cv::THRESH_BINARY_INV);
@@ -28,13 +22,14 @@ void gk(cv::Mat img, cv::Mat templ) {
 
     for (int i = 0; i < wrenchs_contour.size(); i++) {
         cv::Moments mnts = cv::moments(wrenchs_contour[i]);
-        double area = cv::contourArea(wrenchs_contour[i]);
-        double perimeter = cv::arcLength(wrenchs_contour[i], true);
-        double ratio = area / (perimeter * perimeter);
-        double templ_ratio = templ_area / (templ_perimeter * templ_perimeter);
-        std::cout << i << " match: " << ratio << std::endl;
-        std::cout << i << " match: " << templ_ratio << std::endl;
-        if (std::abs(templ_ratio - ratio) < 0.019) {  
+        double match = cv::matchShapes(
+            templ_wrench_contour[0], 
+            wrenchs_contour[i], 
+            cv::CONTOURS_MATCH_I2, 
+            0
+        );
+    
+        if (match > 0.9) {  
             cv::polylines(img, wrenchs_contour[i], true, cv::Scalar(0, 255, 0), 5, 8);
             cv::putText(
                 img, 
@@ -59,10 +54,10 @@ void gk(cv::Mat img, cv::Mat templ) {
         }
     }
 
-    cv::imshow("src", img);
     cv::imshow("res", res);
+    cv::imshow("src", img);
     cv::imshow("templ", templ);
-    cv::waitKey(-1);
+    cv::waitKey();
 }
 
 
