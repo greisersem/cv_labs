@@ -54,7 +54,7 @@ cv::Mat find_nearest(cv::Mat img, cv::Point bulb_coords, std::string team, cv::M
     {
         cv::inRange(
             src_hsv,
-            cv::Scalar(85, 120, 120),
+            cv::Scalar(85, 80, 120),
             cv::Scalar(105, 255, 255),
             src_hsv
         );
@@ -101,6 +101,7 @@ cv::Mat find_nearest(cv::Mat img, cv::Point bulb_coords, std::string team, cv::M
     }
 
     cv::line(res, best_center, bulb_coords, figures_color, 2);
+    return src_hsv;
 }
 
 
@@ -165,5 +166,35 @@ int main()
     cv::waitKey();
     robots_detection(img_1);
     cv::waitKey();
+
+    cv::VideoCapture cap("/home/vboxuser/Desktop/cv_labs/lab_3/img_zadan/roboti/Robot Swarm.mp4");
+    
+    if (!cap.isOpened()) {
+        std::cout << "error video" << std::endl;
+    }
+
+    int f_width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    int f_height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+
+    cv::VideoWriter video("dst.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+        10, cv::Size(f_width, f_height));
+
+    int count = 0;
+    while(true) {
+        cv::Mat frame;
+        cap >> frame;
+        std::cout << "frame " + std::to_string(count) + " processed" << std::endl;
+        if (!frame.empty()) {
+            robots_detection(frame);
+            video.write(frame);
+            cv::imshow("Frame", frame);
+            count ++;
+        } else {
+            break;
+        }
+    }
+    cap.release();
+    video.release();
+
     cv::destroyAllWindows();
 }
