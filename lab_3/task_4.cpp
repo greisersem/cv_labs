@@ -19,22 +19,23 @@ void gk(cv::Mat img, cv::Mat templ) {
     double m01 = mnts.m01;
 
     double templ_area = cv::contourArea(templ_wrench_contour[0]);
-    double templ_perimeter = m00;
+    double templ_perimeter = cv::arcLength(templ_wrench_contour[0], true);
 
     cv::cvtColor(img, res, cv::COLOR_BGR2GRAY);
     cv::threshold(res, res, 230, 255, cv::THRESH_BINARY_INV);
     std::vector <std::vector <cv::Point>> wrenchs_contour;
     cv::findContours(res, wrenchs_contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
-    double match;
-
-    for (int contour_index = 0; contour_index < wrenchs_contour.size(); contour_index++) {
-        cv::Moments mnts = cv::moments(wrenchs_contour[contour_index]);
-        double temp_area = cv::contourArea(wrenchs_contour[contour_index]);
-        double match = std::abs((templ_area / (templ_perimeter + 10)) - (temp_area / (mnts.m00 + 10)));
-
-        if (match > 0.0005 && match < 0.0006) {  
-            cv::polylines(img, wrenchs_contour[contour_index], true, cv::Scalar(0, 255, 0), 5, 8);
+    for (int i = 0; i < wrenchs_contour.size(); i++) {
+        cv::Moments mnts = cv::moments(wrenchs_contour[i]);
+        double area = cv::contourArea(wrenchs_contour[i]);
+        double perimeter = cv::arcLength(wrenchs_contour[i], true);
+        double ratio = area / (perimeter * perimeter);
+        double templ_ratio = templ_area / (templ_perimeter * templ_perimeter);
+        std::cout << i << " match: " << ratio << std::endl;
+        std::cout << i << " match: " << templ_ratio << std::endl;
+        if (std::abs(templ_ratio - ratio) < 0.019) {  
+            cv::polylines(img, wrenchs_contour[i], true, cv::Scalar(0, 255, 0), 5, 8);
             cv::putText(
                 img, 
                 "YES", 
@@ -46,7 +47,7 @@ void gk(cv::Mat img, cv::Mat templ) {
         }
         else
         {
-            cv::polylines(img, wrenchs_contour[contour_index], true, cv::Scalar(0, 0, 255), 5, 8);
+            cv::polylines(img, wrenchs_contour[i], true, cv::Scalar(0, 0, 255), 5, 8);
             cv::putText(
                 img, 
                 "NO", 
