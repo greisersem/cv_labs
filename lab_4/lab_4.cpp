@@ -285,7 +285,6 @@ int main()
     cv::imshow("DFT OpenCV", dft_opencv_spectrum);
     cv::imshow("IDFT OpenCV", idft_opencv);
 
-
     cv::waitKey();
 }
 
