@@ -2,6 +2,7 @@
 #include <vector>
 #include <complex>
 #include <opencv2/opencv.hpp>
+#include <opencv2/intensity_transform.hpp>
 
 
 void get_magnitude_spectrum(const cv::Mat& complexImg, cv::Mat& spectrum)
@@ -207,6 +208,154 @@ cv::Mat convert_vector_to_mat(std::vector<std::complex<float>> src, int N) {
 	return res;
 }
 
+void dft_filter(const cv::Mat& img, const cv::Mat& kernel, std::string window_name)
+{
+    CV_Assert(img.type() == CV_32F);
+    CV_Assert(kernel.type() == CV_32F);
+
+    int P = img.rows + kernel.rows - 1;
+    int Q = img.cols + kernel.cols - 1;
+
+    cv::Mat padded_img, padded_kernel;
+    cv::copyMakeBorder(img, padded_img,
+        0, P - img.rows, 0, Q - img.cols,
+        cv::BORDER_CONSTANT, 0);
+
+    cv::copyMakeBorder(kernel, padded_kernel,
+        0, P - kernel.rows, 0, Q - kernel.cols,
+        cv::BORDER_CONSTANT, 0);
+
+    cv::Mat F, H;
+    cv::dft(padded_img, F, cv::DFT_COMPLEX_OUTPUT);
+    cv::dft(padded_kernel, H, cv::DFT_COMPLEX_OUTPUT);
+    
+    cv::Mat G, G_spectrum;
+    cv::mulSpectrums(F, H, G, 0);
+
+    get_magnitude_spectrum(G, G_spectrum);
+    krasivSpektr(G_spectrum);
+    cv::imshow(window_name, G_spectrum);
+
+    cv::Mat conv;
+    cv::dft(G, conv, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT | cv::DFT_SCALE);
+
+    cv::Mat result = conv(cv::Rect(0, 0, img.cols, img.rows)).clone();
+    cv::normalize(result, result, 0, 1, cv::NORM_MINMAX);
+    cv::imshow(window_name + "idft", result);
+}
+
+
+cv::Mat low_filter(cv::Mat src, int rad) {
+    cv::Mat padded;
+    int m = cv::getOptimalDFTSize(src.rows);
+    int n = cv::getOptimalDFTSize(src.cols);
+    cv::copyMakeBorder(src, padded, 0, m - src.rows, 0, n - src.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::Mat planes[] = { cv::Mat_<float>(padded), cv::Mat::zeros(padded.size(), CV_32F) };
+    cv::Mat complex;
+    cv::merge(planes, 2, complex);
+    cv::dft(complex, complex);
+    krasivSpektr(complex);
+    cv::Mat mask = cv::Mat::zeros(complex.rows, complex.cols, CV_32F);
+    cv::circle(mask, cv::Point(mask.cols / 2, mask.rows / 2), rad, cv::Scalar(1, 1, 1), -1, 8, 0);
+    cv::Mat filtered;
+    complex.copyTo(filtered);
+    cv::split(filtered, planes);
+    planes[0] = planes[0].mul(mask);
+    planes[1] = planes[1].mul(mask);
+    cv::merge(planes, 2, filtered);
+    cv::split(filtered, planes);
+    cv::magnitude(planes[0], planes[1], planes[0]);
+    cv::Mat mag = planes[0];
+    mag += cv::Scalar::all(1);
+    cv::log(mag, mag);
+    cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
+    krasivSpektr(filtered);
+    cv::Mat inversed;
+    cv::idft(filtered, inversed, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    cv::normalize(inversed, inversed, 0, 1, cv::NORM_MINMAX);
+    imshow("lf", mag);
+    return inversed;
+}
+
+
+cv::Mat high_filter(cv::Mat src, int rad) {
+    cv::Mat padded;
+    int m = cv::getOptimalDFTSize(src.rows);
+    int n = cv::getOptimalDFTSize(src.cols);
+    cv::copyMakeBorder(src, padded, 0, m - src.rows, 0, n - src.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::Mat planes[] = { cv::Mat_<float>(padded), cv::Mat::zeros(padded.size(), CV_32F) };
+    cv::Mat complex;
+    cv::merge(planes, 2, complex); 
+    cv::dft(complex, complex);
+    krasivSpektr(complex);
+    cv::Mat mask = cv::Mat::ones(complex.rows, complex.cols, CV_32F);
+    cv::circle(mask, cv::Point(mask.cols / 2, mask.rows / 2), rad, cv::Scalar(0, 0, 0), -1, 8, 0); 
+    cv::Mat filtered;
+    complex.copyTo(filtered);
+    cv::split(filtered, planes);
+    planes[0] = planes[0].mul(mask);
+    planes[1] = planes[1].mul(mask); 
+    cv::merge(planes, 2, filtered);
+    cv::split(filtered, planes); 
+    cv::magnitude(planes[0], planes[1], planes[0]); 
+    cv::Mat mag = planes[0];
+    mag += cv::Scalar::all(1); 
+    cv::log(mag, mag);
+    cv::normalize(mag, mag, 0, 1, cv::NORM_MINMAX);
+    krasivSpektr(filtered);
+    cv::Mat inversed;
+    cv::idft(filtered, inversed, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT); 
+    cv::normalize(inversed, inversed, 0, 1, cv::NORM_MINMAX);
+    imshow("hf", mag);
+    return inversed;
+}
+
+
+cv::Mat correlation(cv::Mat& src, cv::Mat& templ)
+{
+    CV_Assert(src.type() == CV_32F && templ.type() == CV_32F);
+    cv::Scalar meanSymbol = cv::mean(templ);
+    cv::Scalar meanImg = cv::mean(src);
+
+    src = src - meanImg[0];
+    templ = templ - meanSymbol[0];
+    int P = cv::getOptimalDFTSize(src.rows + templ.rows - 1);
+    int Q = cv::getOptimalDFTSize(src.cols + templ.cols - 1);
+
+    cv::Mat padded_src, padded_templ;
+    cv::copyMakeBorder(src, padded_src, 0, P - src.rows, 0, Q - src.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::copyMakeBorder(templ, padded_templ, 0, P - templ.rows, 0, Q - templ.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+
+    cv::Mat F, H;
+    cv::dft(padded_src, F, cv::DFT_COMPLEX_OUTPUT);
+    cv::dft(padded_templ, H, cv::DFT_COMPLEX_OUTPUT);
+
+    cv::Mat G;
+    cv::mulSpectrums(F, H, G, 0, true);
+
+    cv::Mat corr, corr_spectrum;
+    cv::idft(G, corr, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+    cv::Mat corr_valid = corr(cv::Rect(0, 0, src.cols - templ.cols + 1, src.rows - templ.rows + 1)).clone();
+    cv::normalize(
+        corr,
+        corr_spectrum,
+        0,
+        1,
+        cv::NORM_MINMAX
+    );
+    cv::Mat spectrumROI = corr_spectrum(cv::Rect(0, 0, src.cols, src.rows)).clone();
+    cv::imshow("corr", spectrumROI);
+    cv::normalize(corr_valid, corr_valid, 0, 1, cv::NORM_MINMAX);
+
+    double maxVal;
+    cv::minMaxLoc(corr_valid, nullptr, &maxVal);
+    double threshold = maxVal - 0.09;
+    cv::Mat binary;
+    cv::threshold(corr_valid, binary, threshold, 1.0, cv::THRESH_BINARY);
+
+    return binary;
+}
+
 
 int main()
 {
@@ -286,5 +435,96 @@ int main()
     cv::imshow("IDFT OpenCV", idft_opencv);
 
     cv::waitKey();
+    cv::destroyAllWindows();
+
+    cv::Mat laplas, box, sobel_x, sobel_y;
+
+    cv::Mat laplas_kernel(cv::Size(3, 3), CV_32FC1, cv::Scalar());
+	laplas_kernel.at<float>(0, 0) = 0;
+	laplas_kernel.at<float>(0, 1) = 1;
+	laplas_kernel.at<float>(0, 2) = 0;
+	laplas_kernel.at<float>(1, 0) = 1;
+	laplas_kernel.at<float>(1, 1) = -4;
+	laplas_kernel.at<float>(1, 2) = 1;
+	laplas_kernel.at<float>(2, 0) = 0;
+	laplas_kernel.at<float>(2, 1) = 1;
+	laplas_kernel.at<float>(2, 2) = 0;
+
+    cv::Mat sobel_y_kernel(cv::Size(3, 3), CV_32FC1, cv::Scalar());
+    sobel_y_kernel.at<float>(0, 0) = 1;
+	sobel_y_kernel.at<float>(0, 1) = 2;
+	sobel_y_kernel.at<float>(0, 2) = 1;
+	sobel_y_kernel.at<float>(1, 0) = 0;
+	sobel_y_kernel.at<float>(1, 1) = 0;
+	sobel_y_kernel.at<float>(1, 2) = 0;
+	sobel_y_kernel.at<float>(2, 0) = -1;
+	sobel_y_kernel.at<float>(2, 1) = -2;
+	sobel_y_kernel.at<float>(2, 2) = -1;
+
+    cv::Mat sobel_x_kernel(cv::Size(3, 3), CV_32FC1, cv::Scalar());
+    sobel_x_kernel.at<float>(0, 0) = 1;
+	sobel_x_kernel.at<float>(0, 1) = 0;
+	sobel_x_kernel.at<float>(0, 2) = -1;
+	sobel_x_kernel.at<float>(1, 0) = 2;
+	sobel_x_kernel.at<float>(1, 1) = 0;
+	sobel_x_kernel.at<float>(1, 2) = -2;
+	sobel_x_kernel.at<float>(2, 0) = 1;
+	sobel_x_kernel.at<float>(2, 1) = 0;
+	sobel_x_kernel.at<float>(2, 2) = -1;
+
+    cv::Mat box_kernel(cv::Size(3, 3), CV_32FC1, cv::Scalar());
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			box_kernel.at<float>(i, j) = 1;
+		}
+	}
+    box_kernel /= 9.0f;
+
+    dft_filter(img, laplas_kernel, "Laplas");
+    dft_filter(img, sobel_x_kernel, "Sobel X");
+    dft_filter(img, sobel_y_kernel, "Sobel Y");
+    dft_filter(img, box_kernel, "Box filter");
+
+    cv::waitKey();
+    cv::destroyAllWindows();
+
+    cv::Mat high = high_filter(img, 20);
+    cv::Mat low = low_filter(img, 20);
+
+    cv::imshow("Low filter", low);
+    cv::imshow("High filter", high);
+    cv::waitKey();
+    cv::destroyAllWindows();
+
+    cv::Mat nomer, letter, letter_1, letter_2;
+    nomer = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_4/nomer.jpg", cv::IMREAD_GRAYSCALE);
+    letter = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_4/o.png", cv::IMREAD_GRAYSCALE);
+    letter_1 = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_4/letter_1.jpg", cv::IMREAD_GRAYSCALE);
+    letter_2 = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_4/image.png", cv::IMREAD_GRAYSCALE);
+
+    nomer.convertTo(nomer, CV_32F, 1.0 / 255.0);
+    letter.convertTo(letter, CV_32F, 1.0 / 255.0);
+    letter_1.convertTo(letter_1, CV_32F, 1.0 / 255.0);
+    letter_2.convertTo(letter_2, CV_32F, 1.0 / 255.0);
+
+    cv::Mat result, result_1, result_2;
+    cv::imshow("Nomer", nomer);
+    result = correlation(nomer, letter);
+    cv::imshow("Letter", letter);
+    cv::imshow("Correlation", result);
+	cv::waitKey();
+
+    result_1 = correlation(nomer, letter_1);
+    cv::imshow("Letter 2", letter_1);
+    cv::imshow("Correlation_1", result_1);
+	cv::waitKey();
+
+    result_2 = correlation(nomer, letter_2);
+    cv::imshow("Number", letter_2);
+    cv::imshow("Correlation_2", result_2);
+	cv::waitKey();
+    cv::destroyAllWindows();
 }
 
