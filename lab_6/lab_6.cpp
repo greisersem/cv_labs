@@ -6,39 +6,51 @@ void get_laser(const cv::Mat &frame, cv::Mat &binarized_img)
 {
     cv::Mat gray;
     cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-    cv::threshold(gray, gray, 180, 255, cv::THRESH_BINARY);
+    cv::threshold(gray, gray, 120, 255, cv::THRESH_BINARY);
     cv::blur(gray, gray, cv::Size(3, 3));
-    cv::Canny(gray, binarized_img, 100, 150);
+    cv::Canny(gray, binarized_img, 50, 150);
 }
 
 
 void calibration()
 {
     cv::Mat calib_img = cv::imread("/home/vboxuser/Desktop/cv_labs/lab_6/Video/calib_1_0.jpg");
-    cv::Mat lines_img = calib_img.clone();
+    if (calib_img.empty()) {
+        std::cout << "Ошибка: не удалось загрузить изображение!" << std::endl;
+        return;
+    }
 
     cv::Mat binarized_img;
-    std::vector<cv::Vec2f> lines;
     get_laser(calib_img, binarized_img);
     cv::imshow("binarized", binarized_img);
     cv::waitKey();
-    cv::HoughLines(binarized_img, lines, 1.0, CV_PI / 360, 37);
-    std::cout << "lines found: " << lines.size() << std::endl;
 
-    for (int i = 0; i < lines.size(); i++) {
-        float rho = lines[i][0], theta = lines[i][1];
-        cv::Point pt1, pt2;
-        double a = cos(theta), b = sin(theta);
-        double x0 = a*rho, y0 = b*rho;
-        pt1.x = cvRound(x0 + 1000*(-b));
-        pt1.y = cvRound(y0 + 1000*(a));
-        pt2.x = cvRound(x0 - 1000*(-b));
-        pt2.y = cvRound(y0 - 1000*(a));
-        cv::line(lines_img, pt1, pt2, cv::Scalar(0,0,255), 1);
+    std::vector<std::vector<cv::Point>> contours, right_contours;
+    cv::findContours(binarized_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    cv::imshow("lines", lines_img);
-    cv::waitKey();
+    std::cout << "Contours count: " << contours.size() << std::endl;
+
+    for (int i = 0; i < contours.size(); i++) {
+        cv::Mat display = calib_img.clone();
+        
+        cv::drawContours(display, contours, i, cv::Scalar(0, 255, 0), 2);
+
+        std::string info = "Contour #" + std::to_string(i) + " Size: " + std::to_string(cv::contourArea(contours[i]));
+        cv::putText(display, info, cv::Point(30, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
+
+        cv::imshow("Calibration", display);
+
+        int key = cv::waitKey(0);
+        if (key == 27) {
+            right_contours.push_back(contours[i]);
+        }
     }
+
+    cv::drawContours(calib_img, right_contours, -1, cv::Scalar(0, 255, 0));
+    cv::imshow("contours", calib_img);
+    cv::waitKey();
+
+    
 }
 
 
