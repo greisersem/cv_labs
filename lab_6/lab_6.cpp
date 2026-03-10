@@ -27,7 +27,7 @@ void get_laser(const cv::Mat &frame, cv::Mat &binarized_img)
     cv::inRange(
         hsv,
         cv::Scalar(0, 0, 90),
-        cv::Scalar(93, 115, 255),
+        cv::Scalar(90, 115, 255),
         binarized_img 
     );
 }
@@ -131,9 +131,8 @@ void calibration()
 
     float d_laser = -(n_laser[0] * p_3d[0][0] + n_laser[1] * p_3d[0][1] + n_laser[2] * p_3d[0][2]);
 
-    std::cout << "--- РЕЗУЛЬТАТЫ КАЛИБРОВКИ ---" << std::endl;
-    std::cout << "Нормаль n: " << n_laser << std::endl;
-    std::cout << "Коэффициент d: " << d_laser << std::endl;
+    std::cout << "n = " << n_laser << std::endl;
+    std::cout << "d = " << d_laser << std::endl;
 
     D_LASER = d_laser;
     N_LASER = n_laser;
