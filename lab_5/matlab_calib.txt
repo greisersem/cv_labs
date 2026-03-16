@@ -1,0 +1,6 @@
+Intrinsics
+----------
+Focal length (pixels):   [  946.5639 +/- 5.7937      956.2339 +/- 5.7642  ]
+Principal point (pixels):[  647.4361 +/- 1.8760      399.3341 +/- 2.7030  ]
+Radial distortion:       [    0.4538 +/- 0.0481       -7.4010 +/- 0.9298       30.6590 +/- 5.1953  ]
+Tangential distortion:   [    0.0142 +/- 0.0010        0.0014 +/- 0.0008  ]
