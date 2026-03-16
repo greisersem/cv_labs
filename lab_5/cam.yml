@@ -1,0 +1,19 @@
+%YAML:1.0
+---
+calibration_time: "Sun 15 Mar 2026 11:09:27 PM MSK"
+image_width: 640
+image_height: 480
+flags: 8
+camera_matrix: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 579.2212689053664, 0., 331.02899903024309, 0.,
+       578.19012719831778, 244.07883664049126, 0., 0., 1. ]
+distortion_coefficients: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   data: [ 0.092978415965000796, -0.90998308668738459, 0., 0.,
+       1.361157273976358 ]
+avg_reprojection_error: 1.4309745718212594
